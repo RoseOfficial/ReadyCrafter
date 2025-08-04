@@ -67,7 +67,7 @@ public sealed class ScanOptions
     /// Maximum number of recipes to process in a single scan.
     /// Used to maintain performance targets (&lt;150ms).
     /// </summary>
-    public int MaxRecipesToProcess { get; set; } = 5000;
+    public int MaxRecipesToProcess { get; set; } = int.MaxValue; // Show all recipes by default
 
     /// <summary>
     /// Whether to include HQ materials in availability calculations.
@@ -215,7 +215,8 @@ public sealed class ScanOptions
         }
 
         // Ensure reasonable limits
-        MaxRecipesToProcess = Math.Max(100, Math.Min(MaxRecipesToProcess, 20000));
+        // No limit on recipes - show all available
+        MaxRecipesToProcess = Math.Max(100, MaxRecipesToProcess);
         CacheDurationMinutes = Math.Max(1, Math.Min(CacheDurationMinutes, 1440)); // 1 min to 24 hours
         MaxDegreeOfParallelism = Math.Max(1, Math.Min(MaxDegreeOfParallelism, Environment.ProcessorCount * 2));
 

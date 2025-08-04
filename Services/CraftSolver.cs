@@ -366,11 +366,7 @@ public sealed class CraftSolver : IDisposable
             return true;
         }).ToList();
         
-        // Limit to max recipes for performance
-        if (allRecipes.Count > options.MaxRecipesToProcess)
-        {
-            allRecipes = allRecipes.Take(options.MaxRecipesToProcess).ToList();
-        }
+        // No longer limiting recipes - show all available
         
         return allRecipes;
     }

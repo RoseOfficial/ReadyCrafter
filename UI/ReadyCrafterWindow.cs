@@ -691,7 +691,7 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
                 FilterByJobLevel = _filterByJobLevel,
                 ShowHigherLevelRecipes = _showHigherLevelRecipes,
                 EnableParallelProcessing = true,
-                MaxRecipesToProcess = 5000
+                MaxRecipesToProcess = int.MaxValue // Show all recipes
             };
 
             var craftableItems = _craftSolver.GetCraftableItems(scanOptions);
