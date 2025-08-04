@@ -117,8 +117,6 @@ public sealed class PerformanceIntegrationExample : IDisposable
             operationTracker.Complete();
             benchmarkScope.Complete();
             
-            _logger.Debug($"Monitored inventory scan completed in {snapshot.ScanTimeMs:F2}ms " +
-                         $"({snapshot.Items.Count} items, {snapshot.TotalStacks} stacks)");
             
             return snapshot;
         }
@@ -422,7 +420,6 @@ public sealed class PerformanceIntegrationExample : IDisposable
         _memoryProfiler?.Dispose();
         _benchmarkHelper?.Dispose();
         
-        _logger.Debug("PerformanceIntegrationExample disposed");
     }
 }
 

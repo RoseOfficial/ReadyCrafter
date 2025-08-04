@@ -8,14 +8,11 @@ using ReadyCrafter.Services;
 using ReadyCrafter.Utils;
 using Dalamud.Plugin.Services;
 
-#if DEBUG
 using NUnit.Framework;
 using Moq;
-#endif
 
 namespace ReadyCrafter.Tests;
 
-#if DEBUG
 /// <summary>
 /// Comprehensive performance tests validating all PRD requirements.
 /// Tests performance targets: inventory scan ≤150ms, full rescan ≤200ms/≤300ms, memory ≤75MB, CPU ≤1%.
@@ -612,4 +609,3 @@ public class PerformanceTests
         return stopwatch.Elapsed.TotalMilliseconds;
     }
 }
-#endif

@@ -277,7 +277,6 @@ public sealed class CraftSolver : IDisposable
     {
         var allRecipes = new List<RecipeData>();
         
-        // Debug: Check if repository has recipes
         var allAvailableRecipes = _recipeRepository.GetAllRecipes().ToList();
         
         if (allAvailableRecipes.Count == 0)
@@ -286,7 +285,6 @@ public sealed class CraftSolver : IDisposable
             return allRecipes;
         }
         
-        // Debug: Look for recipes that produce item ID 5361 (Maple Lumber)
         var mapleLumberRecipes = allAvailableRecipes.Where(r => r.ItemId == 5361).ToList();
         if (mapleLumberRecipes.Any())
         {
@@ -328,7 +326,6 @@ public sealed class CraftSolver : IDisposable
             _logger.Warning($"RECIPE USING MAPLE LOG: ID {mlr.RecipeId}, ItemName='{mlr.ItemName}', ItemID={mlr.ItemId}, Level={mlr.RecipeLevel}");
         }
         
-        // Debug: Log level range being used
         
         // Apply job filter if specified
         if (options.JobFilter.Any())
@@ -362,7 +359,6 @@ public sealed class CraftSolver : IDisposable
                 var canCraft = _jobLevelService.CanCraftRecipe(recipe.JobId, recipe.RequiredLevel);
                 if (!canCraft && !options.ShowHigherLevelRecipes)
                 {
-                    // Debug logging disabled to reduce noise
                     return false;
                 }
             }
@@ -439,18 +435,6 @@ public sealed class CraftSolver : IDisposable
         
         // Perform fresh calculation
         var craftabilityResult = await CalculateCraftability(recipe, inventory, options);
-        
-        // Debug: Log why recipes are not craftable
-        if (recipe.ItemName.Contains("Maple"))
-        {
-            _logger.Warning($"MAPLE DEBUG: Recipe '{recipe.ItemName}' (ID: {recipe.RecipeId}) has {craftabilityResult.MaxCraftable} craftable, requires {recipe.Ingredients.Count} ingredients");
-            foreach (var ingredient in recipe.Ingredients)
-            {
-                var hasItem = inventory.Items.TryGetValue(ingredient.ItemId, out var itemQuantity);
-                var available = hasItem && itemQuantity != null ? itemQuantity.Nq + itemQuantity.Hq : 0;
-                _logger.Warning($"  - Ingredient: {ingredient.ItemName} (ID: {ingredient.ItemId}), Required: {ingredient.Quantity}, Available: {available}");
-            }
-        }
         
         // Cache the result
         CacheResult(cacheKey, craftabilityResult);

@@ -79,7 +79,6 @@ public sealed class MemoryProfiler : IDisposable
         // Initialize profiling timer (disabled by default)
         _profileTimer = new Timer(CaptureMemorySnapshot, null, Timeout.Infinite, Timeout.Infinite);
         
-        _logger.Debug($"MemoryProfiler initialized with baseline memory usage: {_baselineMemoryUsage / (1024.0 * 1024.0):F2}MB");
     }
     
     /// <summary>
@@ -340,8 +339,6 @@ public sealed class MemoryProfiler : IDisposable
             // Check for memory threshold violations
             CheckMemoryThresholds(snapshot);
             
-            _logger.Debug($"Memory snapshot: {snapshot.WorkingSetBytes / (1024.0 * 1024.0):F2}MB working set, " +
-                         $"{snapshot.ManagedMemoryBytes / (1024.0 * 1024.0):F2}MB managed");
         }
         catch (Exception ex)
         {
@@ -583,7 +580,6 @@ public sealed class MemoryProfiler : IDisposable
         _snapshots.Clear();
         _allocationTrackers.Clear();
         
-        _logger.Debug("MemoryProfiler disposed");
     }
 }
 

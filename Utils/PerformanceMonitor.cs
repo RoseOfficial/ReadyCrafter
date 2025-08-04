@@ -72,7 +72,6 @@ public sealed class PerformanceMonitor : IDisposable
         // Initialize performance timer (disabled by default)
         _performanceTimer = new Timer(CaptureMetrics, null, Timeout.Infinite, Timeout.Infinite);
         
-        _logger.Debug("PerformanceMonitor initialized");
     }
     
     /// <summary>
@@ -169,7 +168,6 @@ public sealed class PerformanceMonitor : IDisposable
             }
         }
         
-        _logger.Debug($"Recorded operation '{operationName}' completed in {duration.TotalMilliseconds:F2}ms");
     }
     
     /// <summary>
@@ -512,7 +510,6 @@ public sealed class PerformanceMonitor : IDisposable
         _metricsHistory.Clear();
         _operationTrackers.Clear();
         
-        _logger.Debug("PerformanceMonitor disposed");
     }
 }
 

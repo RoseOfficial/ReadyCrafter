@@ -532,10 +532,6 @@ public sealed class PluginConfiguration : IPluginConfiguration
 
     #region Advanced Settings
 
-    /// <summary>
-    /// Whether to enable debug logging.
-    /// </summary>
-    public bool DebugLogging { get; set; } = false;
 
     /// <summary>
     /// Whether to enable experimental features.

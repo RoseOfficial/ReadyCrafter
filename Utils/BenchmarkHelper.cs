@@ -108,7 +108,6 @@ public sealed class BenchmarkHelper : IDisposable
         // Load existing baselines
         LoadBaselines();
         
-        _logger.Debug($"BenchmarkHelper initialized with data path: {_benchmarkDataPath}");
     }
     
     /// <summary>
@@ -206,7 +205,6 @@ public sealed class BenchmarkHelper : IDisposable
             
             try
             {
-                _logger.Debug($"Running benchmark: {benchmarkName}");
                 
                 var result = await RunBenchmarkInternalAsync(
                     benchmarkName,
@@ -461,7 +459,6 @@ public sealed class BenchmarkHelper : IDisposable
             // Record result
             RecordBenchmarkResult(result);
             
-            _logger.Debug($"Benchmark {benchmarkName} completed: {result.AverageMs:F2}ms average over {iterations} iterations");
         }
         catch (Exception ex)
         {
@@ -520,7 +517,6 @@ public sealed class BenchmarkHelper : IDisposable
             // Record result
             RecordBenchmarkResult(result);
             
-            _logger.Debug($"Async benchmark {benchmarkName} completed: {result.AverageMs:F2}ms average over {iterations} iterations");
         }
         catch (Exception ex)
         {
@@ -651,7 +647,6 @@ public sealed class BenchmarkHelper : IDisposable
                     _baselines.TryAdd(kvp.Key, kvp.Value);
                 }
                 
-                _logger.Debug($"Loaded {data.Count} benchmark baselines");
             }
         }
         catch (Exception ex)
@@ -713,7 +708,6 @@ public sealed class BenchmarkHelper : IDisposable
         _baselines.Clear();
         _recentResults.Clear();
         
-        _logger.Debug("BenchmarkHelper disposed");
     }
 }
 

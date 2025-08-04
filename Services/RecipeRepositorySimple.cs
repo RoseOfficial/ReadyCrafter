@@ -124,21 +124,6 @@ public class RecipeRepositorySimple : IDisposable
             
             logger.Information($"Successfully loaded {loadedRecipes.Count} FFXIV recipes");
             
-            // Debug: Log sample of loaded recipes with ingredient counts
-            foreach (var recipe in loadedRecipes.Take(5))
-            {
-                logger.Information($"Recipe: {recipe.RecipeId} - {recipe.ItemName} (Level {recipe.RecipeLevel}, Job {recipe.JobName}, Ingredients: {recipe.Ingredients.Count})");
-            }
-            
-            // Critical debug: Check if recipes have ingredients
-            var recipesWithIngredients = loadedRecipes.Count(r => r.Ingredients.Count > 0);
-            var recipesWithoutIngredients = loadedRecipes.Count - recipesWithIngredients;
-            logger.Warning($"RECIPE DEBUG: {recipesWithIngredients} recipes WITH ingredients, {recipesWithoutIngredients} recipes WITHOUT ingredients");
-            
-            if (recipesWithoutIngredients > recipesWithIngredients)
-            {
-                logger.Error("CRITICAL: Most recipes have no ingredients! This will cause all recipes to show as craftable.");
-            }
         }
         catch (Exception ex)
         {
@@ -413,15 +398,6 @@ public class RecipeRepositorySimple : IDisposable
             if (luminaRecipe.ItemResult.RowId == 0)
                 return false;
                 
-            // Special debug for Maple Lumber
-            if (luminaRecipe.ItemResult.RowId == 5361)
-            {
-                logger.Error($"MAPLE LUMBER RECIPE VALIDATION DEBUG:");
-                logger.Error($"  - Recipe ID: {luminaRecipe.RowId}");
-                logger.Error($"  - CraftType.RowId: {luminaRecipe.CraftType.RowId}");
-                logger.Error($"  - RecipeLevelTable.RowId: {luminaRecipe.RecipeLevelTable.RowId}");
-                logger.Error($"  - Will FAIL validation: {luminaRecipe.CraftType.RowId == 0 || luminaRecipe.RecipeLevelTable.RowId == 0}");
-            }
 
             // Check if recipe has a craft type without accessing the full CraftType object
             if (luminaRecipe.CraftType.RowId == 0)
@@ -557,7 +533,6 @@ public class RecipeRepositorySimple : IDisposable
 
         try
         {
-            // Based on debug output, ingredients are stored in collections:
             // - Ingredient: Collection`1[RowRef`1[Item]]
             // - AmountIngredient: Collection`1[Byte]
             var recipeType = luminaRecipe.GetType();
@@ -664,7 +639,6 @@ public class RecipeRepositorySimple : IDisposable
                 }
             }
             
-            // Debug log if we found ingredients
             if (ingredients.Count > 0 && luminaRecipe.ItemResult.RowId == 5361)
             {
                 logger.Warning($"MAPLE LUMBER RECIPE LOADING: Recipe {luminaRecipe.RowId} produces item {luminaRecipe.ItemResult.RowId} and has {ingredients.Count} ingredients");

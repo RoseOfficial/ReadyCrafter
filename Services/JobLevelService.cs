@@ -55,7 +55,6 @@ public sealed class JobLevelService : IDisposable
             // For crafting jobs, we need to access the job levels from the character data
             if (!CraftingJobNames.ContainsKey(jobId))
             {
-                // Debug logging disabled to reduce noise
                 return 0;
             }
 
@@ -145,7 +144,6 @@ public sealed class JobLevelService : IDisposable
         var playerLevel = GetJobLevel(jobId);
         var canCraft = playerLevel >= requiredLevel;
         
-        // Debug logging disabled to reduce noise
         
         return canCraft;
     }
