@@ -48,14 +48,15 @@ public sealed class ScanOptions
     /// <summary>
     /// Maximum recipe level to include in results.
     /// Higher level recipes require more processing time.
+    /// FIXED: Increased to 100 to include all possible recipe levels.
     /// </summary>
-    public uint MaxRecipeLevel { get; set; } = 90;
+    public uint MaxRecipeLevel { get; set; } = 100;
 
     /// <summary>
     /// Minimum recipe level to include in results.
-    /// Used to filter out low-level recipes that may not be relevant.
+    /// FIXED: Set to 0 to include basic recipes like Maple Lumber that may have level 0.
     /// </summary>
-    public uint MinRecipeLevel { get; set; } = 1;
+    public uint MinRecipeLevel { get; set; } = 0;
 
     /// <summary>
     /// Whether to resolve one level of intermediate crafts.
@@ -101,8 +102,9 @@ public sealed class ScanOptions
     /// <summary>
     /// Whether to filter recipes based on player's current job levels.
     /// When enabled, only shows recipes the player can actually craft.
+    /// DISABLED: Set to false by default due to inconsistent job level detection.
     /// </summary>
-    public bool FilterByJobLevel { get; set; } = true;
+    public bool FilterByJobLevel { get; set; } = false;
 
     /// <summary>
     /// Whether to show recipes that are above the player's current job level.

@@ -353,15 +353,16 @@ public sealed class CraftSolver : IDisposable
             if (!options.IncludeSpecializationRecipes && recipe.IsSpecialization)
                 return false;
             
+            // DISABLED: Job level filtering disabled due to inconsistent results
             // Apply job level filtering if enabled
-            if (options.FilterByJobLevel && _jobLevelService.IsJobLevelCheckingAvailable())
-            {
-                var canCraft = _jobLevelService.CanCraftRecipe(recipe.JobId, recipe.RequiredLevel);
-                if (!canCraft && !options.ShowHigherLevelRecipes)
-                {
-                    return false;
-                }
-            }
+            // if (options.FilterByJobLevel && _jobLevelService.IsJobLevelCheckingAvailable())
+            // {
+            //     var canCraft = _jobLevelService.CanCraftRecipe(recipe.JobId, recipe.RequiredLevel);
+            //     if (!canCraft && !options.ShowHigherLevelRecipes)
+            //     {
+            //         return false;
+            //     }
+            // }
             
             return true;
         }).ToList();
@@ -882,7 +883,7 @@ public sealed class CraftSolver : IDisposable
             RequiredCraftsmanship = recipe.RequiredCraftsmanship,
             RequiredControl = recipe.RequiredControl,
             QualityThreshold = recipe.QualityThreshold,
-            MeetsJobLevelRequirement = CanPlayerCraftRecipe(recipe, options),
+            MeetsJobLevelRequirement = true, // DISABLED: Always true since job level filtering is disabled
             LastCalculated = DateTime.UtcNow
         };
         
@@ -967,7 +968,7 @@ public sealed class CraftSolver : IDisposable
             RequiredCraftsmanship = recipe.RequiredCraftsmanship,
             RequiredControl = recipe.RequiredControl,
             QualityThreshold = recipe.QualityThreshold,
-            MeetsJobLevelRequirement = CanPlayerCraftRecipe(recipe, defaultOptions),
+            MeetsJobLevelRequirement = true, // DISABLED: Always true since job level filtering is disabled
             LastCalculated = DateTime.UtcNow
         };
     }

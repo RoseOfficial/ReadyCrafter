@@ -9,6 +9,7 @@ using Dalamud.Plugin.Services;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using ReadyCrafter.Models;
+using ReadyCrafter.Utils;
 
 namespace ReadyCrafter.Services;
 
@@ -312,7 +313,7 @@ public class RecipeRepositorySimple : IDisposable
             logger.Information($"Processing {recipeSheet.Count} recipes from Lumina data with optimizations...");
             
             // Pre-allocate collections with estimated capacity for better performance
-            var estimatedValidRecipes = (int)(recipeSheet.Count * 0.7); // Assume ~70% valid recipes
+            var estimatedValidRecipes = (int)(recipeSheet.Count * 0.9); // FIXED: Expect ~90% valid recipes now with relaxed validation
             var recipes = new List<RecipeData>(estimatedValidRecipes);
             
             // Create lookup tables for frequently accessed data to reduce repeated Excel sheet lookups
@@ -321,6 +322,7 @@ public class RecipeRepositorySimple : IDisposable
             
             var processedCount = 0;
             var validRecipes = 0;
+            var skippedRecipes = 0;
             var startTime = DateTime.UtcNow;
 
             // Process recipes in batches for better memory management and progress reporting
@@ -333,7 +335,17 @@ public class RecipeRepositorySimple : IDisposable
                 
                 // Early validation with minimal Excel sheet access
                 if (!IsValidLuminaRecipeOptimized(luminaRecipe))
+                {
+                    skippedRecipes++;
+                    
+                    // MAPLE LUMBER DEBUG: Check if Maple Lumber is being skipped during validation
+                    if (luminaRecipe.ItemResult.RowId == 5361)
+                    {
+                        logger.Warning($"❌ MAPLE LUMBER SKIPPED: Recipe {luminaRecipe.RowId} -> Item {luminaRecipe.ItemResult.RowId} failed validation");
+                    }
+                    
                     continue;
+                }
 
                 try
                 {
@@ -344,11 +356,26 @@ public class RecipeRepositorySimple : IDisposable
                         currentBatch.Add(recipeData);
                         validRecipes++;
                         
+                        // MAPLE LUMBER DEBUG: Check if we successfully loaded Maple Lumber
+                        if (recipeData.ItemId == 5361)
+                        {
+                            logger.Information($"✅ MAPLE LUMBER LOADED: Recipe {recipeData.RecipeId} -> Item {recipeData.ItemId} '{recipeData.ItemName}' " +
+                                              $"(Job: {recipeData.JobName}, Level: {recipeData.RecipeLevel}, Ingredients: {recipeData.Ingredients.Count})");
+                        }
+                        
                         // Process in batches to avoid large memory spikes
                         if (currentBatch.Count >= batchSize)
                         {
                             recipes.AddRange(currentBatch);
                             currentBatch.Clear();
+                        }
+                    }
+                    else
+                    {
+                        // MAPLE LUMBER DEBUG: Check if Maple Lumber is being rejected
+                        if (luminaRecipe.ItemResult.RowId == 5361)
+                        {
+                            logger.Warning($"❌ MAPLE LUMBER REJECTED: Recipe {luminaRecipe.RowId} -> Item {luminaRecipe.ItemResult.RowId} was rejected during creation");
                         }
                     }
                 }
@@ -371,8 +398,15 @@ public class RecipeRepositorySimple : IDisposable
             }
             
             var totalElapsed = DateTime.UtcNow - startTime;
-            logger.Information($"Loaded {validRecipes} valid recipes from {processedCount} total Lumina recipes in {totalElapsed.TotalMilliseconds:F0}ms " +
-                              $"({validRecipes / Math.Max(1, totalElapsed.TotalSeconds):F1} valid recipes/sec)");
+            logger.Information($"Recipe Loading Summary: {validRecipes} valid recipes loaded from {processedCount} total ({skippedRecipes} skipped) " +
+                              $"in {totalElapsed.TotalMilliseconds:F0}ms ({validRecipes / Math.Max(1, totalElapsed.TotalSeconds):F1} recipes/sec)");
+            
+            // IMPORTANT: Log if we're not getting close to the expected 9,712 recipes
+            if (validRecipes < 8000)
+            {
+                logger.Warning($"Recipe count ({validRecipes}) is significantly below expected (~9,712). " +
+                              $"Skipped {skippedRecipes} recipes due to validation. This may indicate data loading issues.");
+            }
             
             return recipes;
         }
@@ -384,7 +418,8 @@ public class RecipeRepositorySimple : IDisposable
     }
     
     /// <summary>
-    /// Optimized recipe validation with minimal Excel sheet access
+    /// Optimized recipe validation with minimal Excel sheet access.
+    /// FIXED: Made less restrictive to allow all valid FFXIV recipes through.
     /// </summary>
     private bool IsValidLuminaRecipeOptimized(Recipe luminaRecipe)
     {
@@ -397,33 +432,14 @@ public class RecipeRepositorySimple : IDisposable
             // Check if recipe has a result item without accessing the full Item object
             if (luminaRecipe.ItemResult.RowId == 0)
                 return false;
-                
 
-            // Check if recipe has a craft type without accessing the full CraftType object
-            if (luminaRecipe.CraftType.RowId == 0)
-            {
-                // Special case: Maple Lumber recipe has CraftType.RowId == 0 but is still valid
-                if (luminaRecipe.ItemResult.RowId == 5361) // Maple Lumber
-                {
-                    return true;
-                }
-                return false;
-            }
-
-            // Check if recipe has a level table without accessing the full object
-            // Special case: Some basic recipes might have RecipeLevelTable.RowId == 0
-            // but still be valid (basic material conversion recipes)
-            if (luminaRecipe.RecipeLevelTable.RowId == 0)
-            {
-                // Allow basic material conversion recipes (typically level 1 Carpenter recipes)
-                // These are simple log->lumber conversions
-                if (luminaRecipe.CraftType.RowId == 8) // Carpenter
-                {
-                    return true;
-                }
-                return false;
-            }
-
+            // FIXED: Made validation much more permissive to show all recipes
+            // The original validation was too strict and excluded many valid recipes
+            
+            // Don't filter out recipes based on CraftType or RecipeLevelTable being 0
+            // Many legitimate FFXIV recipes might have these as 0 for various reasons
+            // Let the UI and user decide which recipes they want to see
+            
             return true;
         }
         catch
@@ -456,45 +472,40 @@ public class RecipeRepositorySimple : IDisposable
             if (string.IsNullOrWhiteSpace(resultItem.Name.ToString()))
                 return null;
 
-            // Use cached craft types to reduce Excel sheet lookups
+            // FIXED: Handle missing CraftType gracefully instead of rejecting recipes
             var craftTypeId = luminaRecipe.CraftType.RowId;
             CraftType? craftType = null;
             
-            if (craftTypeId == 0 && luminaRecipe.ItemResult.RowId == 5361) // Maple Lumber special case
-            {
-                // Leave craftType as null - we'll handle this in the recipe creation section
-            }
-            else
+            if (craftTypeId != 0)
             {
                 if (!craftTypeCache.TryGetValue(craftTypeId, out var cachedCraftType))
                 {
                     cachedCraftType = luminaRecipe.CraftType.Value;
-                    if (ReferenceEquals(cachedCraftType, null) || cachedCraftType.RowId == 0)
-                        return null;
-                        
-                    // Cache the craft type for future lookups
-                    craftTypeCache[craftTypeId] = cachedCraftType;
+                    if (cachedCraftType.RowId != 0)
+                    {
+                        // Cache the craft type for future lookups
+                        craftTypeCache[craftTypeId] = cachedCraftType;
+                        craftType = cachedCraftType;
+                    }
                 }
-                craftType = cachedCraftType;
+                else
+                {
+                    craftType = cachedCraftType;
+                }
             }
 
+            // FIXED: Handle missing RecipeLevelTable gracefully instead of rejecting recipes
             var recipeLevel = luminaRecipe.RecipeLevelTable.Value;
-            // Special handling for recipes without level table (like Maple Lumber)
             bool hasNoLevelTable = ReferenceEquals(recipeLevel, null) || recipeLevel.RowId == 0;
-            
-            if (hasNoLevelTable && luminaRecipe.ItemResult.RowId != 5361)
-                return null;
 
-            // Special handling for Maple Lumber which has missing craft type data
-            bool hasMissingCraftType = craftType == null && luminaRecipe.ItemResult.RowId == 5361;
-            
+            // FIXED: Provide sensible defaults for recipes missing data instead of rejecting them
             var recipeData = new RecipeData
             {
                 RecipeId = luminaRecipe.RowId,
                 ItemId = resultItem.RowId,
                 ItemName = resultItem.Name.ToString(),
-                JobId = hasMissingCraftType ? 8u : (craftType?.RowId ?? 8u), // Default to Carpenter (8) for Maple Lumber
-                JobName = hasMissingCraftType ? "Carpenter" : (craftType?.Name.ToString() ?? "Carpenter"),
+                JobId = craftType?.RowId ?? 8u, // Default to Carpenter (8) if no craft type
+                JobName = craftType?.Name.ToString() ?? "Unknown",
                 RecipeLevel = hasNoLevelTable ? 1u : recipeLevel.ClassJobLevel,
                 RequiredLevel = hasNoLevelTable ? 1u : recipeLevel.ClassJobLevel,
                 Yield = Math.Max(1u, luminaRecipe.AmountResult),
@@ -524,8 +535,8 @@ public class RecipeRepositorySimple : IDisposable
     }
     
     /// <summary>
-    /// Optimized ingredient extraction using common FFXIV Lumina property naming patterns
-    /// Based on research of FFXIV data mining community practices
+    /// Extract recipe ingredients using the proper Lumina extension method.
+    /// FIXED: Replaces broken reflection-based approach with community-standard pattern.
     /// </summary>
     private List<RecipeIngredient> ExtractRecipeIngredientsOptimized(Recipe luminaRecipe, ExcelSheet<Item> itemSheet, Dictionary<uint, Item> itemCache)
     {
@@ -533,115 +544,40 @@ public class RecipeRepositorySimple : IDisposable
 
         try
         {
-            // - Ingredient: Collection`1[RowRef`1[Item]]
-            // - AmountIngredient: Collection`1[Byte]
-            var recipeType = luminaRecipe.GetType();
-            
-            // Get the Ingredient collection property
-            var ingredientProp = recipeType.GetProperty("Ingredient");
-            var amountProp = recipeType.GetProperty("AmountIngredient");
-            
-            if (ingredientProp != null && amountProp != null)
+            // FIXED: Use the proper extension method instead of broken reflection
+            foreach (var ingredientInfo in luminaRecipe.Ingredients().Where(x => x.Amount > 0 && x.Item.RowId != 0))
             {
-                var ingredientCollection = ingredientProp.GetValue(luminaRecipe);
-                var amountCollection = amountProp.GetValue(luminaRecipe);
-                
-                if (ingredientCollection != null && amountCollection != null)
+                var ingredientId = ingredientInfo.Item.RowId;
+                var amount = ingredientInfo.Amount;
+
+                // Get item details from cache or sheet
+                if (!itemCache.TryGetValue(ingredientId, out var ingredientItem))
                 {
-                    // Access the collections as IEnumerable to iterate
-                    var ingredientEnumerable = ingredientCollection as System.Collections.IEnumerable;
-                    var amountEnumerable = amountCollection as System.Collections.IEnumerable;
-                    
-                    if (ingredientEnumerable != null && amountEnumerable != null)
-                    {
-                        var ingredientList = new List<object>();
-                        var amountList = new List<byte>();
+                    ingredientItem = ingredientInfo.Item.Value;
+                    if (ingredientItem.RowId == 0)
+                        continue;
                         
-                        foreach (var item in ingredientEnumerable)
-                        {
-                            ingredientList.Add(item);
-                        }
-                        
-                        foreach (var amount in amountEnumerable)
-                        {
-                            if (amount is byte b)
-                                amountList.Add(b);
-                        }
-                        
-                        // Process paired ingredients and amounts
-                        for (int i = 0; i < Math.Min(ingredientList.Count, amountList.Count); i++)
-                        {
-                            var ingredient = ingredientList[i];
-                            var amount = amountList[i];
-                            
-                            // Skip if amount is 0
-                            if (amount == 0)
-                                continue;
-                            
-                            uint ingredientId = 0;
-                            
-                            // Extract item ID from RowRef<Item>
-                            if (ingredient != null)
-                            {
-                                // Try to get RowId property from the RowRef
-                                var rowRefType = ingredient.GetType();
-                                var rowIdProp = rowRefType.GetProperty("RowId");
-                                var valueProp = rowRefType.GetProperty("Value");
-                                
-                                if (rowIdProp != null)
-                                {
-                                    var rowIdValue = rowIdProp.GetValue(ingredient);
-                                    if (rowIdValue is uint id)
-                                        ingredientId = id;
-                                }
-                                else if (valueProp != null)
-                                {
-                                    // Try getting the Item from Value property
-                                    var itemValue = valueProp.GetValue(ingredient);
-                                    if (itemValue != null)
-                                    {
-                                        var itemType = itemValue.GetType();
-                                        var itemRowIdProp = itemType.GetProperty("RowId");
-                                        if (itemRowIdProp != null)
-                                        {
-                                            var itemRowId = itemRowIdProp.GetValue(itemValue);
-                                            if (itemRowId is uint id2)
-                                                ingredientId = id2;
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Skip if we couldn't get an ingredient ID
-                            if (ingredientId == 0)
-                                continue;
-                            
-                            // Get item details from cache or sheet
-                            if (!itemCache.TryGetValue(ingredientId, out var ingredientItem))
-                            {
-                                ingredientItem = itemSheet.GetRow(ingredientId);
-                                if (ingredientItem.RowId == 0)
-                                    continue;
-                                    
-                                itemCache[ingredientId] = ingredientItem;
-                            }
-                            
-                            ingredients.Add(new RecipeIngredient
-                            {
-                                ItemId = ingredientId,
-                                Quantity = amount,
-                                RequiresHq = false,
-                                ItemName = ingredientItem.Name.ToString(),
-                                IconId = ingredientItem.Icon
-                            });
-                        }
-                    }
+                    itemCache[ingredientId] = ingredientItem;
                 }
+
+                ingredients.Add(new RecipeIngredient
+                {
+                    ItemId = ingredientId,
+                    Quantity = amount,
+                    RequiresHq = false, // FFXIV recipes typically don't require HQ unless specified
+                    ItemName = ingredientItem.Name.ToString(),
+                    IconId = ingredientItem.Icon
+                });
             }
             
+            // Debug logging for specific recipes
             if (ingredients.Count > 0 && luminaRecipe.ItemResult.RowId == 5361)
             {
-                logger.Warning($"MAPLE LUMBER RECIPE LOADING: Recipe {luminaRecipe.RowId} produces item {luminaRecipe.ItemResult.RowId} and has {ingredients.Count} ingredients");
+                logger.Information($"MAPLE LUMBER RECIPE LOADED: Recipe {luminaRecipe.RowId} produces item {luminaRecipe.ItemResult.RowId} with {ingredients.Count} ingredients");
+                foreach (var ing in ingredients)
+                {
+                    logger.Information($"  - {ing.ItemName} (ID: {ing.ItemId}) x{ing.Quantity}");
+                }
             }
         }
         catch (Exception ex)

@@ -14,6 +14,11 @@ public sealed class JobLevelService : IDisposable
     private readonly IClientState _clientState;
     private readonly IPluginLog _logger;
     private bool _disposed = false;
+    
+    // FIXED: Cache job levels to provide consistent results between refreshes
+    private readonly Dictionary<uint, uint> _cachedJobLevels = new();
+    private DateTime _lastCacheUpdate = DateTime.MinValue;
+    private const int CacheValidityMinutes = 5; // Cache job levels for 5 minutes
 
     // Job ID mapping for FFXIV crafting jobs
     private static readonly Dictionary<uint, string> CraftingJobNames = new()
@@ -36,6 +41,7 @@ public sealed class JobLevelService : IDisposable
 
     /// <summary>
     /// Get the player's current level for a specific job.
+    /// FIXED: Now uses caching to provide consistent results between refreshes.
     /// </summary>
     /// <param name="jobId">The job ID to check (8-15 for crafting jobs)</param>
     /// <returns>The player's level for that job, or 0 if not available</returns>
@@ -43,6 +49,12 @@ public sealed class JobLevelService : IDisposable
     {
         if (_disposed)
             return 0;
+
+        // FIXED: Check cache first to ensure consistency
+        if (IsCacheValid() && _cachedJobLevels.TryGetValue(jobId, out var cachedLevel))
+        {
+            return cachedLevel;
+        }
 
         try
         {
@@ -58,36 +70,43 @@ public sealed class JobLevelService : IDisposable
                 return 0;
             }
 
+            uint jobLevel = 0;
+
             // If the player is currently on this job, we can get the level directly
             if (localPlayer.ClassJob.RowId == jobId)
             {
-                return localPlayer.Level;
+                jobLevel = localPlayer.Level;
+            }
+            else
+            {
+                // For other jobs, we need to access the ClassJobLevels from the character data
+                // Try to access the job levels through the character's class job levels collection
+                
+                // First check if we have access to job level data
+                // This requires accessing FFXIVClientStructs or similar game memory structures
+                // Since this is complex and may not be available in all scenarios, we'll use a hybrid approach
+                
+                try
+                {
+                    // Attempt to get job level data from the player's character
+                    // This is a simplified approach - in a full implementation, you would access
+                    // the CharacterClass/CharacterJob structures through unsafe code
+                    
+                    // For now, use a reasonable default based on the player's current level
+                    // This provides some level checking while remaining safe
+                    var currentLevel = localPlayer.Level;
+                    jobLevel = EstimateJobLevel(jobId, currentLevel);
+                }
+                catch (Exception jobEx)
+                {
+                    jobLevel = GetDefaultJobLevel(jobId);
+                }
             }
 
-            // For other jobs, we need to access the ClassJobLevels from the character data
-            // Try to access the job levels through the character's class job levels collection
+            // FIXED: Cache the result to ensure consistency
+            UpdateCache(jobId, jobLevel);
             
-            // First check if we have access to job level data
-            // This requires accessing FFXIVClientStructs or similar game memory structures
-            // Since this is complex and may not be available in all scenarios, we'll use a hybrid approach
-            
-            try
-            {
-                // Attempt to get job level data from the player's character
-                // This is a simplified approach - in a full implementation, you would access
-                // the CharacterClass/CharacterJob structures through unsafe code
-                
-                // For now, use a reasonable default based on the player's current level
-                // This provides some level checking while remaining safe
-                var currentLevel = localPlayer.Level;
-                var estimatedJobLevel = EstimateJobLevel(jobId, currentLevel);
-                
-                return estimatedJobLevel;
-            }
-            catch (Exception jobEx)
-            {
-                return GetDefaultJobLevel(jobId);
-            }
+            return jobLevel;
         }
         catch (Exception ex)
         {
@@ -99,35 +118,19 @@ public sealed class JobLevelService : IDisposable
     /// <summary>
     /// Estimate a job level based on the player's current overall level.
     /// This is a fallback method when exact job levels cannot be accessed.
+    /// FIXED: Now returns consistent values to prevent refresh inconsistencies.
     /// </summary>
     /// <param name="jobId">The job to estimate</param>
     /// <param name="currentLevel">The player's current level on their active job</param>
     /// <returns>Estimated level for the specified job</returns>
     private uint EstimateJobLevel(uint jobId, uint currentLevel)
     {
-        // Simple heuristic: assume crafting jobs are somewhat leveled if the player is high level
-        // This is not accurate but provides reasonable behavior for most players
+        // FIXED: Use a conservative but consistent estimation approach
+        // Since we can't access actual job levels reliably, use the default high level
+        // This ensures consistent filtering behavior between refreshes
+        // The cache system prevents this from being called repeatedly
         
-        if (currentLevel >= 80)
-        {
-            // High level players likely have most crafting jobs at decent levels
-            return Math.Min(80u, currentLevel - 10);
-        }
-        else if (currentLevel >= 50)
-        {
-            // Mid-level players might have some crafting jobs leveled
-            return Math.Min(50u, currentLevel - 20);
-        }
-        else if (currentLevel >= 30)
-        {
-            // Lower level players might have basic crafting access
-            return Math.Min(30u, currentLevel - 10);
-        }
-        else
-        {
-            // Very new players probably have minimal crafting access
-            return Math.Min(15u, currentLevel);
-        }
+        return GetDefaultJobLevel(jobId);
     }
 
     /// <summary>
@@ -240,6 +243,36 @@ public sealed class JobLevelService : IDisposable
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// FIXED: Check if the cached job levels are still valid.
+    /// </summary>
+    /// <returns>True if cache is valid and can be used</returns>
+    private bool IsCacheValid()
+    {
+        return DateTime.UtcNow - _lastCacheUpdate < TimeSpan.FromMinutes(CacheValidityMinutes);
+    }
+
+    /// <summary>
+    /// FIXED: Update the cache with a job level and refresh cache timestamp.
+    /// </summary>
+    /// <param name="jobId">Job ID to cache</param>
+    /// <param name="level">Level to cache</param>
+    private void UpdateCache(uint jobId, uint level)
+    {
+        _cachedJobLevels[jobId] = level;
+        _lastCacheUpdate = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// FIXED: Force invalidate the cache to refresh job levels.
+    /// Call this when the player changes jobs or levels up.
+    /// </summary>
+    public void InvalidateCache()
+    {
+        _cachedJobLevels.Clear();
+        _lastCacheUpdate = DateTime.MinValue;
     }
 
     public void Dispose()

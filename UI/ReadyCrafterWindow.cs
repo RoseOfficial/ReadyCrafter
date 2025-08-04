@@ -43,7 +43,7 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
     private bool _showOnlyFavorites = false;
     private bool _showOnlyHq = false;
     private bool _includeIntermediates = true;
-    private bool _filterByJobLevel = true;
+    private bool _filterByJobLevel = false; // DISABLED: Job level filtering disabled
     private bool _showHigherLevelRecipes = false;
     private bool _showSettings = false;
     private int _sortColumnIndex = 0; // 0=Item, 1=Job, 2=Level, 3=Qty
@@ -258,34 +258,35 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
             filtersChanged = true;
         }
 
-        ImGui.SameLine();
+        // DISABLED: Job level filtering options removed due to inconsistent behavior
+        // ImGui.SameLine();
 
-        // Filter by job level checkbox
-        if (ImGui.Checkbox("Filter by level", ref _filterByJobLevel))
-        {
-            filtersChanged = true;
-        }
-        
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Only show recipes you can craft with your current job levels");
-        }
+        // // Filter by job level checkbox
+        // if (ImGui.Checkbox("Filter by level", ref _filterByJobLevel))
+        // {
+        //     filtersChanged = true;
+        // }
+        // 
+        // if (ImGui.IsItemHovered())
+        // {
+        //     ImGui.SetTooltip("Only show recipes you can craft with your current job levels");
+        // }
 
-        ImGui.SameLine();
+        // ImGui.SameLine();
 
-        // Show higher level recipes checkbox (only enabled if filtering by job level)
-        if (_filterByJobLevel)
-        {
-            if (ImGui.Checkbox("Show higher level", ref _showHigherLevelRecipes))
-            {
-                filtersChanged = true;
-            }
-            
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.SetTooltip("Show recipes that require higher job levels (marked with orange text)");
-            }
-        }
+        // // Show higher level recipes checkbox (only enabled if filtering by job level)
+        // if (_filterByJobLevel)
+        // {
+        //     if (ImGui.Checkbox("Show higher level", ref _showHigherLevelRecipes))
+        //     {
+        //         filtersChanged = true;
+        //     }
+        //     
+        //     if (ImGui.IsItemHovered())
+        //     {
+        //         ImGui.SetTooltip("Show recipes that require higher job levels (marked with orange text)");
+        //     }
+        // }
 
         // Search field on new line
         ImGui.SetNextItemWidth(-1.0f);
@@ -636,7 +637,7 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
                 ShowIntermediateCrafts = _includeIntermediates,
                 SortBy = SortCriteria.ItemName,
                 SortDirection = SortDirection.Ascending,
-                MaxResults = 1000
+                MaxResults = int.MaxValue // FIXED: Show all items, don't limit to 1000
             };
 
             ApplyFilters();
@@ -650,7 +651,16 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
     {
         try
         {
+            // DEBUG: Check if Maple Lumber is in the all items list
+            var mapleLumberBefore = _allCraftableItems.Where(item => item.ItemName.Contains("Maple Lumber")).ToList();
+            _logger.Warning($"DEBUG: Found {mapleLumberBefore.Count} Maple Lumber items before filtering");
+            _logger.Warning($"DEBUG: _currentFilter.MaxResults = {_currentFilter.MaxResults}");
+            
             var filteredList = _allCraftableItems.Where(item => item.MatchesFilter(_currentFilter));
+            
+            // DEBUG: Check if Maple Lumber passes filtering
+            var mapleLumberAfterFiltering = filteredList.Where(item => item.ItemName.Contains("Maple Lumber")).ToList();
+            _logger.Warning($"DEBUG: Found {mapleLumberAfterFiltering.Count} Maple Lumber items after filtering");
 
             // Note: The _includeIntermediates flag is handled via FilterOptions.ShowIntermediateCrafts
             // in the CraftableItem.MatchesFilter() method. The ShowOnlyCraftable filter
@@ -658,6 +668,13 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
             // No additional filtering is needed here.
 
             _filteredItems = filteredList.Take(_currentFilter.MaxResults).ToArray();
+            
+            // DEBUG: Check if Maple Lumber is in final results
+            var mapleLumberFinal = _filteredItems.Where(item => item.ItemName.Contains("Maple Lumber")).ToList();
+            _logger.Warning($"DEBUG: Found {mapleLumberFinal.Count} Maple Lumber items in final results (Total items: {_filteredItems.Length})");
+            
+            // DEBUG: Log total counts at each stage
+            _logger.Warning($"DEBUG: Items flow: All={_allCraftableItems.Length} -> Filtered={filteredList.Count()} -> Final={_filteredItems.Length}");
         }
         catch (Exception ex)
         {
@@ -691,7 +708,9 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
                 FilterByJobLevel = _filterByJobLevel,
                 ShowHigherLevelRecipes = _showHigherLevelRecipes,
                 EnableParallelProcessing = true,
-                MaxRecipesToProcess = int.MaxValue // Show all recipes
+                MaxRecipesToProcess = int.MaxValue, // Show all recipes
+                MinRecipeLevel = 0, // FIXED: Include level 0 recipes like Maple Lumber
+                MaxRecipeLevel = 100 // FIXED: Increase max level to ensure we don't exclude high-level recipes
             };
 
             var craftableItems = _craftSolver.GetCraftableItems(scanOptions);
@@ -702,7 +721,8 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
                 _totalCraftableCount = _allCraftableItems.Length;
                 _lastDataUpdate = DateTime.UtcNow;
                 
-                ApplyFilters();
+                // FIXED: Ensure filters are updated with correct MaxResults before applying
+                UpdateFilters();
             }
 
         }
