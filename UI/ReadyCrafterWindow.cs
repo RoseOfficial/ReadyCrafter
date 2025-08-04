@@ -244,14 +244,6 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
 
         ImGui.SameLine();
 
-        // Craftable only checkbox
-        if (ImGui.Checkbox("Craftable only", ref _showOnlyCraftable))
-        {
-            filtersChanged = true;
-        }
-
-        ImGui.SameLine();
-
         // Favorites only checkbox
         if (ImGui.Checkbox("Favorites", ref _showOnlyFavorites))
         {
@@ -638,7 +630,7 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
             {
                 SearchText = _searchBuffer.Trim(),
                 JobFilter = _selectedJobId >= 0 ? (uint)_selectedJobId : null,
-                ShowOnlyCraftable = _showOnlyCraftable,
+                ShowOnlyCraftable = false,
                 ShowOnlyFavorites = _showOnlyFavorites,
                 ShowOnlyHq = _showOnlyHq,
                 ShowIntermediateCrafts = _includeIntermediates,
@@ -660,10 +652,10 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
         {
             var filteredList = _allCraftableItems.Where(item => item.MatchesFilter(_currentFilter));
 
-            if (!_includeIntermediates)
-            {
-                filteredList = filteredList.Where(item => item.MaxCraftable > 0);
-            }
+            // Note: The _includeIntermediates flag is handled via FilterOptions.ShowIntermediateCrafts
+            // in the CraftableItem.MatchesFilter() method. The ShowOnlyCraftable filter
+            // in FilterOptions already handles filtering by MaxCraftable > 0.
+            // No additional filtering is needed here.
 
             _filteredItems = filteredList.Take(_currentFilter.MaxResults).ToArray();
         }

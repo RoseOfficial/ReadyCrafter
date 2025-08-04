@@ -392,7 +392,7 @@ public sealed class CraftSolver : IDisposable
                 cancellationToken.ThrowIfCancellationRequested();
                 
                 var craftableItem = ProcessSingleRecipe(recipe, inventory, options).Result;
-                if (craftableItem?.MaxCraftable > 0)
+                if (craftableItem != null)
                 {
                     results.Add(craftableItem);
                 }
@@ -412,7 +412,7 @@ public sealed class CraftSolver : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             
             var craftableItem = await ProcessSingleRecipe(recipe, inventory, options);
-            if (craftableItem?.MaxCraftable > 0)
+            if (craftableItem != null)
             {
                 results.Add(craftableItem);
             }
@@ -439,9 +439,7 @@ public sealed class CraftSolver : IDisposable
         // Cache the result
         CacheResult(cacheKey, craftabilityResult);
         
-        if (craftabilityResult.MaxCraftable <= 0)
-            return null;
-        
+        // Always return the item, even if not craftable (MaxCraftable = 0)
         return CreateCraftableItem(recipe, craftabilityResult, inventory, options);
     }
 
@@ -948,8 +946,7 @@ public sealed class CraftSolver : IDisposable
     
     private CraftableItem? CreateCraftableItemFromCache(RecipeData recipe, CraftabilityResult cachedResult)
     {
-        if (cachedResult.MaxCraftable <= 0)
-            return null;
+        // Always return the item, even if not craftable (MaxCraftable = 0)
         
         // This is a simplified version that recreates the craftable item from cached data
         // In a production system, you might want to cache the full CraftableItem
