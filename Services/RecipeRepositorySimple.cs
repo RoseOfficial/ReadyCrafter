@@ -493,19 +493,23 @@ public class RecipeRepositorySimple : IDisposable
                     craftType = cachedCraftType;
                 }
             }
+            
 
             // FIXED: Handle missing RecipeLevelTable gracefully instead of rejecting recipes
             var recipeLevel = luminaRecipe.RecipeLevelTable.Value;
             bool hasNoLevelTable = ReferenceEquals(recipeLevel, null) || recipeLevel.RowId == 0;
 
             // FIXED: Provide sensible defaults for recipes missing data instead of rejecting them
+            var jobId = craftType?.RowId ?? 8u; // Default to Carpenter (8) if no craft type
+            var jobName = craftType?.Name.ToString() ?? GetJobNameById(jobId);
+            
             var recipeData = new RecipeData
             {
                 RecipeId = luminaRecipe.RowId,
                 ItemId = resultItem.RowId,
                 ItemName = resultItem.Name.ToString(),
-                JobId = craftType?.RowId ?? 8u, // Default to Carpenter (8) if no craft type
-                JobName = craftType?.Name.ToString() ?? "Unknown",
+                JobId = jobId,
+                JobName = jobName,
                 RecipeLevel = hasNoLevelTable ? 1u : recipeLevel.ClassJobLevel,
                 RequiredLevel = hasNoLevelTable ? 1u : recipeLevel.ClassJobLevel,
                 Yield = Math.Max(1u, luminaRecipe.AmountResult),
@@ -708,6 +712,25 @@ public class RecipeRepositorySimple : IDisposable
     public int GetRecipeCount()
     {
         return recipeCache.Count;
+    }
+
+    /// <summary>
+    /// Get the job name by job ID for fallback when CraftType is missing
+    /// </summary>
+    private string GetJobNameById(uint jobId)
+    {
+        return jobId switch
+        {
+            8 => "Carpenter",
+            9 => "Blacksmith", 
+            10 => "Armorer",
+            11 => "Goldsmith",
+            12 => "Leatherworker",
+            13 => "Weaver",
+            14 => "Alchemist",
+            15 => "Culinarian",
+            _ => "Unknown"
+        };
     }
 
     public void Dispose()

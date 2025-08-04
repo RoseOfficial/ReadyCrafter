@@ -651,16 +651,7 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
     {
         try
         {
-            // DEBUG: Check if Maple Lumber is in the all items list
-            var mapleLumberBefore = _allCraftableItems.Where(item => item.ItemName.Contains("Maple Lumber")).ToList();
-            _logger.Warning($"DEBUG: Found {mapleLumberBefore.Count} Maple Lumber items before filtering");
-            _logger.Warning($"DEBUG: _currentFilter.MaxResults = {_currentFilter.MaxResults}");
-            
             var filteredList = _allCraftableItems.Where(item => item.MatchesFilter(_currentFilter));
-            
-            // DEBUG: Check if Maple Lumber passes filtering
-            var mapleLumberAfterFiltering = filteredList.Where(item => item.ItemName.Contains("Maple Lumber")).ToList();
-            _logger.Warning($"DEBUG: Found {mapleLumberAfterFiltering.Count} Maple Lumber items after filtering");
 
             // Note: The _includeIntermediates flag is handled via FilterOptions.ShowIntermediateCrafts
             // in the CraftableItem.MatchesFilter() method. The ShowOnlyCraftable filter
@@ -668,13 +659,6 @@ public sealed class ReadyCrafterWindow : Window, IDisposable
             // No additional filtering is needed here.
 
             _filteredItems = filteredList.Take(_currentFilter.MaxResults).ToArray();
-            
-            // DEBUG: Check if Maple Lumber is in final results
-            var mapleLumberFinal = _filteredItems.Where(item => item.ItemName.Contains("Maple Lumber")).ToList();
-            _logger.Warning($"DEBUG: Found {mapleLumberFinal.Count} Maple Lumber items in final results (Total items: {_filteredItems.Length})");
-            
-            // DEBUG: Log total counts at each stage
-            _logger.Warning($"DEBUG: Items flow: All={_allCraftableItems.Length} -> Filtered={filteredList.Count()} -> Final={_filteredItems.Length}");
         }
         catch (Exception ex)
         {
