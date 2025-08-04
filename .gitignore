@@ -1,0 +1,139 @@
+# .NET Build Artifacts
+bin/
+obj/
+out/
+build/
+dist/
+
+# Visual Studio / Rider / JetBrains
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.cache
+*.ilk
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# .NET Specific
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.dll.config
+*.cache
+*.suo
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+!packages/repositories.config
+.nuget/
+nuget.exe
+
+# Package Lock Files (keep packages.lock.json for reproducible builds)
+# packages.lock.json - keeping this tracked for Dalamud plugin builds
+
+# MSBuild
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+*.resharper.user
+
+# Testing
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage.json
+coverage.xml
+coverage.info
+*.lcov
+
+# Dalamud Plugin Specific
+*.zip
+latest.zip
+*-latest.zip
+ReadyCrafter-*.zip
+
+# FFXIV Plugin Development
+*.log
+logs/
+crash-*.dmp
+
+# Temporary Files
+*.tmp
+*.temp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment and Configuration
+.env
+.env.local
+.env.production
+.env.development
+appsettings.Development.json
+appsettings.Local.json
+
+# Performance and Profiling
+*.vsp
+*.psess
+*.vspx
+*.sap
+BenchmarkDotNet.Artifacts/
+
+# Documentation Generation
+docs/_site/
+DocFX/_site/
+
+# Windows Image File Caches
+*.cab
+*.msi
+
+# Backup Files
+*.bak
+*.backup
+*.old
+
+# AI Pair Programming Extensions
+.claude/
+CLAUDE.md
+.cursor/
+.copilot/
+.codeium/
+.tabnine/
+.aider/
+.continue/
+
+# Git Hooks and Local Config
+.git/hooks/
+.gitconfig.local
+
+# IDE Extensions
+.vscode/extensions.json
+.idea/
+
+# Local Settings and User Preferences
+*.user.json
+local.settings.json
+user.config

@@ -1,0 +1,27 @@
+{
+  "Author": "ReadyCrafter Team",
+  "Name": "ReadyCrafter",
+  "Punchline": "One keystroke to see every recipe you can craft right now.",
+  "Description": "ReadyCrafter ends the \"Do I already have the mats?\" routine. One keystroke scans all of your storage—inventory, armoury chest, chocobo saddlebag, FC chest, and optionally retainer bags—then lists every recipe you can craft right now with materials on hand.",
+  "InternalName": "ReadyCrafter",
+  "AssemblyVersion": "1.0.0.0",
+  "RepoUrl": "https://github.com/ReadyCrafterTeam/ReadyCrafter",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "crafting",
+    "inventory",
+    "recipes",
+    "materials",
+    "utility"
+  ],
+  "CategoryTags": [
+    "utility",
+    "jobs"
+  ],
+  "DalamudApiLevel": 12,
+  "LoadRequiredState": 2,
+  "LoadSync": false,
+  "CanUnloadAsync": true,
+  "LoadPriority": 0,
+  "Changelog": "Initial release of ReadyCrafter v1.0\n- Scan personal inventory, Armory Chest, saddlebags, and FC chest\n- Optional retainer bag scanning with FFXIVClientStructs\n- Real-time refresh on inventory changes\n- Search, filter, sort, and favorites functionality\n- One-level dependency resolution for craftable intermediates\n- Hotkey binding support\n- Performance optimized: <150ms scan time, <1% CPU usage"
+}

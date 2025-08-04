@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Dalamud.NET.Sdk/12.0.2">
+  <PropertyGroup>
+    <Version>1.0.0.0</Version>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <LangVersion>13.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <Optimize>false</Optimize>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <DefineConstants>DEBUG;UNSAFE_CLIENT_STRUCTS</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <DefineConstants>RELEASE;UNSAFE_CLIENT_STRUCTS</DefineConstants>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>CS1705;CS8632;MSB3277</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Performance Dependencies -->
+    <PackageReference Include="Lumina.Excel" Version="7.2.3" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="7.0.0" />
+    <!-- Testing Dependencies -->
+    <PackageReference Include="NUnit" Version="3.13.3" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Moq" Version="4.18.2" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Update="DalamudPackager" Version="12.0.0" />
+  </ItemGroup>
+
+  <Target Name="RenameLatestZip" AfterTargets="PackagePlugin" Condition="'$(Configuration)' == 'Release'">
+    <Exec Command="powershell.exe -Command &quot;Get-ChildItem '$(OutDir)' -Filter 'ReadyCrafter-*-latest.zip' | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Rename-Item -NewName 'ReadyCrafter-latest.zip' -Force&quot;" />
+  </Target>
+
+</Project>
